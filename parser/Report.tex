@@ -1,0 +1,72 @@
+\documentclass[10pt,journal]{IEEEtran}
+
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage{color}
+
+\title{Final Project Report - Part II: Parser Implementation}
+
+\author{Andres Antillon \& Andres Aguilar}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This report describes the Python parser we built to check whether a song written in the project’s chord grammar is syntactically correct. The parser follows a straightforward recursive–descent strategy—each grammar rule is handled by its own function, and mismatches raise a custom \texttt{ParserError}. Running the program on the sample song ``Tick~Tock.txt'' confirmed that the input is accepted and produced a helpful debug trace. The parser will serve as the core of the chord calculator to be implemented in the final stage of the project.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Parser, Recursive Descent, Chord Grammar, Python, Syntax Verification
+\end{IEEEkeywords}
+
+\section{Introduction}
+Our long-term goal is to build a chord calculator that can interpret popular-music lead sheets. In this second milestone we concentrate on the first step: writing a parser that simply tells us whether a song respects the grammar, without yet expanding the chords into notes.
+
+We wrote a recursive-descent parser in Python where each non-terminal in the grammar maps to a function. This direct translation keeps the code easy to read and extend, and the approach naturally supports optional elements and repetitions.
+
+In addition, the parser records the line and column number of every token so that any \texttt{ParserError} can point musicians to the exact spot where the grammar is violated. Because the implementation relies solely on Python’s standard library, it can run unchanged on macOS, Linux, and Windows, which simplifies grading and future deployment.
+
+\section{Methodology}
+The parser was developed in Python, taking advantage of its concise syntax and strong string-handling libraries. We translated the grammar shown in Figure~1 of the project description—covering songs, bars, meters, and chords—into a set of mutually recursive functions.
+
+The main structure of the parser is encapsulated in a class called \texttt{ChordParser}, which maintains the input string and a position pointer for tracking progress through the input. First, a dedicated routine discards whitespace, ensuring that syntactic tokens are processed without interference from layout characters. Second, every non-terminal symbol in the grammar is mapped to a Python method—e.g., \texttt{parse\_song}, \texttt{parse\_bar}, \texttt{parse\_meter}, and so on—mirroring the structure of the formal project specification. Third, syntactic faults are signalled via the custom \texttt{ParserError} exception, allowing external drivers to differentiate between user mistakes and unexpected run-time issues. Lastly, the helper functions \texttt{peek} and \texttt{next} are wrappers so that we can easily debug the parser by printing the token detected and the position of the token.
+
+To evaluate the implementation we ran the parser on the instructor-provided songs (``Tick~Tock'', ``Don't Stop Believin' '', ``Edge of Desire'', ``Luka'', and ``La Camisa Negra'') plus a set of intentionally corrupted files to verify that invalid input is rejected. The invalid cases covered misplaced barlines, unsupported chord qualities, missing meters, and stray characters between chords.
+
+\section{Results}
+
+As mentioned, we tested the parser with both valid and invalid files. Figures~1–4 show selective console output in both verbose (debug) and concise modes. In the verbose run the program prints each token and the parser function currently executing, which is handy when you are hunting for an elusive off-by-one error. The concise run, on the other hand, prints a one-liner per file summarising whether it was accepted or rejected.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\linewidth]{success_1.png}
+    \caption{Initial part of output confirming that the parser deems the input valid with debug output enabled.}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\linewidth]{success_2.png}
+    \caption{End of console output confirming that the parser deems the input valid with debug output enabled.}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\linewidth]{invalid.png}
+    \caption{Console output generated for an input containing syntactic errors with debug output enabled.}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\linewidth]{all.png}
+    \caption{Console output generated for all songs with debug output disabled.}
+\end{figure}
+
+\section{Conclusion}
+
+The recursive-descent parser met all our expectations: it accepted every valid lead sheet and rejected all malformed ones while providing clear error messages. The design, centred around one function per grammar rule, will make it easy to compute the actual chord notes in the next phase of the project.
+
+Looking ahead we plan to (i) cover jazz extensions and slash chords, (ii) improve error messages so song-writers can pinpoint mistakes faster, and (iii) shave off a few milliseconds so the tool can eventually run in real-time. We are also considering emitting a full abstract syntax tree (AST) so that follow-up tools—such as automatic transposers or reharmonisation helpers—can piggy-back on the parser without having to reinvent the wheel.
+
+\end{document}

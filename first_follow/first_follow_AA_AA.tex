@@ -1,0 +1,115 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true,linkcolor=blue,urlcolor=blue,citecolor=blue}
+\usepackage{listings}
+\usepackage{booktabs}
+\usepackage{array}
+
+% Typography: no paragraph indent; modest paragraph gap
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt}
+
+\title{Final Project Report - Part I: FIRST and FOLLOW Sets}
+\author{Andres Antillon \& Andres Aguilar \\
+CS3361 Concepts of Programming Languages \\
+Dr. Arturo Camacho}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section{Overview}
+This report presents the analysis of FIRST and FOLLOW sets for a context-free grammar designed for musical notation and chord progressions. The grammar defines the structure for parsing musical input including time signatures, chord progressions, and various musical symbols. This analysis is essential for constructing predictive parsers and understanding the grammar's parsing characteristics.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.8\textwidth]{grammar.png}
+\caption{Context-Free Grammar for Musical Notation}
+\end{figure}
+
+\section{FIRST Sets}
+The FIRST set of a non-terminal symbol contains all terminal symbols that can appear as the first symbol in any string derived from that non-terminal.
+
+\begin{table}[ht]
+\centering
+\caption{FIRST Sets}
+\small
+\begin{tabular}{@{}p{2.5cm}>{\ttfamily\footnotesize}p{10cm}@{}}
+\toprule
+\textbf{Non-Terminal} & \textbf{FIRST Set} \\
+\midrule
+input & \{\%, 1, 2, 3, \ldots, 15, A, B, C, D, E, F, G, NC\} \\
+song & \{\%, 1, 2, 3, \ldots, 15, A, B, C, D, E, F, G, NC\} \\
+bar & \{\%, 1, 2, 3, \ldots, 15, A, B, C, D, E, F, G, NC\} \\
+meter & \{1, 2, 3, \ldots, 15\} \\
+numerator & \{1, 2, 3, \ldots, 15\} \\
+denominator & \{1, 2, 4, 8, 16\} \\
+chords & \{\%, A, B, C, D, E, F, G, NC\} \\
+chord & \{A, B, C, D, E, F, G\} \\
+root & \{A, B, C, D, E, F, G\} \\
+note & \{A, B, C, D, E, F, G\} \\
+letter & \{A, B, C, D, E, F, G\} \\
+acc & \{\#, b\} \\
+description & \{\#, (, +, -, 1, 5, 6, 7, 9, 11, 13, \textasciicircum, b, no3, no5, no35, o, sus2, sus4, sus24, $\varepsilon$\} \\
+qual & \{+, -, 1, 5, o\} \\
+qnum & \{6, 7, 9, 11, 13, \textasciicircum\} \\
+ext & \{9, 11, 13\} \\
+add & \{\#, (, 5, 9, 11, 13, b\} \\
+alt & \{\#, 5, 9, 11, 13, b\} \\
+sus & \{sus2, sus4, sus24\} \\
+omit & \{no3, no5, no35\} \\
+bass & \{/\} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{FOLLOW Sets}
+The FOLLOW set of a non-terminal symbol contains all terminal symbols that can appear immediately after that non-terminal in any sentential form.
+
+\begin{table}[ht]
+\centering
+\caption{FOLLOW Sets}
+\small
+\begin{tabular}{@{}p{2.5cm}>{\ttfamily\footnotesize}p{10cm}@{}}
+\toprule
+\textbf{Non-Terminal} & \textbf{FOLLOW Set} \\
+\midrule
+input & $\emptyset$ \\
+song & \{EOF\} \\
+bar & \{1, 2, 3, \ldots, 15, \%, A, B, C, D, E, F, G, NC, EOF\} \\
+meter & \{\%, A, B, C, D, E, F, G, NC\} \\
+numerator & \{/\} \\
+denominator & \{\%, A, B, C, D, E, F, G, NC\} \\
+chords & \{|\} \\
+chord & \{A, B, C, D, E, F, G, |\} \\
+root & \{\#, (, +, -, /, 1, 5, 6, 7, 9, 11, 13, \textasciicircum, b, no3, no5, no35, o, sus2, sus4, sus24, A, B, C, D, E, F, G, |\} \\
+note & \{\#, (, +, -, /, 1, 5, 6, 7, 9, 11, 13, \textasciicircum, b, no3, no5, no35, o, sus2, sus4, sus24, A, B, C, D, E, F, G, |\} \\
+letter & \{\#, (, +, -, /, 1, 5, 6, 7, 9, 11, 13, \textasciicircum, b, no3, no5, no35, o, sus2, sus4, sus24, A, B, C, D, E, F, G, |\} \\
+acc & \{\#, (, +, -, /, 1, 5, 6, 7, 9, 11, 13, \textasciicircum, b, no3, no5, no35, o, sus2, sus4, sus24, A, B, C, D, E, F, G, |\} \\
+description & \{/, A, B, C, D, E, F, G, |\} \\
+qual & \{\#, (, /, 5, 6, 7, 9, 11, 13, \textasciicircum, b, no3, no5, no35, sus2, sus4, sus24, A, B, C, D, E, F, G, |\} \\
+qnum & \{\#, (, /, 5, 9, 11, 13, b, no3, no5, no35, sus2, sus4, sus24, A, B, C, D, E, F, G, |\} \\
+ext & \{\#, (, ), /, 5, 9, 11, 13, b, no3, no5, no35, sus2, sus4, sus24, A, B, C, D, E, F, G, |\} \\
+add & \{/, no3, no5, no35, sus2, sus4, sus24, A, B, C, D, E, F, G, |\} \\
+alt & \{), /, no3, no5, no35, sus2, sus4, sus24, A, B, C, D, E, F, G, |\} \\
+sus & \{/, no3, no5, no35, A, B, C, D, E, F, G, |\} \\
+omit & \{/, A, B, C, D, E, F, G, |\} \\
+bass & \{A, B, C, D, E, F, G, |\} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Conclusion}
+This report presents the complete FIRST and FOLLOW sets for the musical notation grammar. The FIRST sets identify the initial symbols that can begin strings derived from each non-terminal, while the FOLLOW sets specify the symbols that can immediately follow each non-terminal in sentential forms.
+
+The grammar defines a hierarchical structure for musical notation, with \texttt{input} as the start symbol, \texttt{song} containing sequences of \texttt{bar} elements, and \texttt{bar} elements containing optional time signatures and chord progressions. The analysis shows that 22 non-terminals are defined in the grammar, with FIRST sets ranging from simple single-element sets to complex sets containing multiple terminal symbols and the empty string.
+
+\end{document}
