@@ -4,7 +4,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional, Set, Tuple
 
-# Reuse the submitted parser (deliverable 2) for grammar validation.
+# Design note: We keep the delivered parser (parser.py) intact for grammar validation, as required by the assignment,
+# and use a separate lightweight CalculatorParser below to build an AST for note derivation/histogram output.
+# This means we parse twice (validate, then build AST), but inputs are small so the overhead is negligible.
 try:
     from calculator import parser as submitted_parser  # when used as a package
 except ImportError:
