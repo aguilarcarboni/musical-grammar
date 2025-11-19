@@ -412,10 +412,12 @@ def _add_interval(root_pc: int, interval: int) -> int:
     return (root_pc + interval) % 12
 
 
-def format_table(rows: List[Tuple[Set[int], str, bool]], cell_width: int = 3) -> str:
+def format_table(rows: List[Tuple[Set[int], str, bool]]) -> str:
     labels = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B"]
     index_field = 4  # len like " 99."
     pad = " " * (index_field + 1)
+
+    cell_width = 3
 
     header = pad + " ".join(f"{lab:>{cell_width}}" for lab in labels)
     divider = pad + " ".join(f"{'-':>{cell_width}}" for _ in labels)
@@ -470,18 +472,14 @@ def load_song(path: str) -> Song:
 
 
 def main(argv: List[str]) -> None:
-    compact = False
     args = argv[1:]
-    if args and args[0] == "--compact":
-        compact = True
-        args = args[1:]
     if len(args) != 1:
-        print("Usage: python calculator.py [--compact] <song-file>", file=sys.stderr)
+        print("Usage: python calculator.py <song-file>", file=sys.stderr)
         sys.exit(1)
     song_path = args[0]
     song = load_song(song_path)
     rows = expand_song(song)
-    output = format_table(rows, cell_width=2 if compact else 3)
+    output = format_table(rows)
     print(output)
 
 
