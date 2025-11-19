@@ -1,14 +1,21 @@
-import importlib
+import importlib.util
 import sys
 from dataclasses import dataclass
+from pathlib import Path
 from typing import List, Optional, Set, Tuple
 
 # Reuse the submitted parser (deliverable 2) for grammar validation.
-# Import dynamically to avoid name shadowing.
 try:
-    submitted_parser = importlib.import_module("calculator.parser")
+    from calculator import parser as submitted_parser  # when used as a package
 except ImportError:
-    submitted_parser = None
+    parser_path = Path(__file__).resolve().parent / "parser.py"
+    spec = importlib.util.spec_from_file_location("calculator_parser", parser_path)
+    module = importlib.util.module_from_spec(spec) if spec and spec.loader else None
+    if module and spec and spec.loader:
+        spec.loader.exec_module(module)
+        submitted_parser = module
+    else:
+        submitted_parser = None
 
 # Pitch-class helpers (0–11 pitch classes; letters map to white keys, accidentals adjust)
 LETTER_TO_PC = {"C": 0, "D": 2, "E": 4, "F": 5, "G": 7, "A": 9, "B": 11}
@@ -465,8 +472,9 @@ def load_song(path: str) -> Song:
     with open(path, "r", encoding="utf-8") as fh:
         content = fh.read()
     # Validate with submitted parser; do not alter that code.
-    if submitted_parser is not None:
-        submitted_parser.ChordParser(content).parse_input()
+    if submitted_parser is None:
+        raise ParseError("Bundled parser not found; ensure calculator/parser.py is present.")
+    submitted_parser.ChordParser(content).parse_input()
     parser = CalculatorParser(content)
     return parser.parse()
 
