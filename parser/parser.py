@@ -251,21 +251,26 @@ class ChordParser:
         self.parse_note()
 
 def main():
-    files = os.listdir("songs")
+    # Allow overriding the songs directory or providing a single file via CLI.
+    target = sys.argv[1] if len(sys.argv) > 1 else "songs"
+    if os.path.isfile(target):
+        file_paths = [target]
+    else:
+        files = os.listdir(target)
+        file_paths = [os.path.join(target, fname) for fname in files]
     print("--------------------------------")
-    for f in files:
-        with open(os.path.join("songs", f), "r") as f:
-            file_name = f.name.split('/')[-1].split('.')[0]
+    for path in file_paths:
+        with open(path, "r") as f:
+            file_name = f.name.split("/")[-1].split(".")[0]
             print("Parsing song: ", file_name)
             input_content = f.read()
             parser = ChordParser(input_content)
             try:
                 parser.parse_input()
-                print(f"Song valid.")
+                print("Song valid.")
             except ParserError as e:
                 print(f"Song invalid: {e}")
         print("--------------------------------")
-    
 
 if __name__ == "__main__":
     main()
