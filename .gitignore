@@ -1,0 +1,12 @@
+# OS cruft
+.DS_Store
+
+# Python bytecode/cache
+__pycache__/
+*.pyc
+
+# Virtualenv
+.venv/
+
+# Generated calculator outputs
+calculator/out/*_notes.txt
