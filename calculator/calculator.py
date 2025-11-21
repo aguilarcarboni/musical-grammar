@@ -5,8 +5,8 @@ from pathlib import Path
 from typing import List, Optional, Set, Tuple
 
 # We parse songs into simple Python objects (Song -> Bars -> Chords), an AST (Abstract Syntax Tree) that is easier to
-# work with than raw text. Keep comments light and aimed at explaining intent. Load the bundled parser that lives next
-# to this file so running `python calculator.py <song>` always works without extra setup.
+# work with than raw text. Load the bundled parser that lives next to this file so running `python calculator.py <song>`
+# always works without extra setup.
 parser_path = Path(__file__).resolve().parent / "parser.py"
 spec = importlib.util.spec_from_file_location("calculator_parser", parser_path)
 if not spec or not spec.loader:
