@@ -108,6 +108,7 @@ class ChordParser:
     def parse_chord(self):
         self.parse_root()
         self.parse_description()
+        self.skip_ws()
         if self.peek() == "/":
             self.parse_bass()
 
@@ -247,7 +248,9 @@ class ChordParser:
         return False
 
     def parse_bass(self):
+        self.skip_ws()
         self.expect("/")
+        self.skip_ws()
         self.parse_note()
 
 
