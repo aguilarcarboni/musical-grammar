@@ -1,0 +1,774 @@
+
+\documentclass[10pt,journal]{IEEEtran}
+
+\usepackage{amsmath}
+\usepackage{listings}
+\usepackage{color}
+\usepackage{hyperref}
+
+\title{Final Project Report - Part III: Chord Calculator Implementation}
+
+\author{Andres Antillon and Andres Aguilar\\CS3361 Concepts of Programming Languages\\Instructor: Dr. Arturo Camacho}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This report documents the third deliverable of the musical-grammar project: a chord calculator that outputs the pitch-class set for every chord in a valid song. Building on the parser from Part~II, the program rebuilds an abstract syntax tree, applies the interval tables from the specification, renders the required histogram, and writes the grading files. We cover how the code handles suspensions, extensions, additions, omissions, inversions, and repeat bars, then show outputs for six test songs. The raw calculator outputs are embedded as plain text.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Chord calculator, pitch classes, recursive descent, Python
+\end{IEEEkeywords}
+
+\section{Introduction}
+Deliverable~III requires computing the pitch classes for every chord in a song, producing the Fig.~3 histogram, and saving the output for chi-square grading against instructor data~\cite{project}. This stage interprets qualities, suspensions, extensions, additions, omissions, and inversions; repeated bars marked with \% are skipped in the totals row. Because the grading formula penalizes squared error, each interval must be applied correctly. This report explains the implementation choices and shows evidence that the calculator matches the specification.
+
+\section{Methodology}
+\subsection{Pipeline Overview}
+The calculator runs on Python~3.14.0 inside the repository virtual environment. For each song, \texttt{calculator.py} first calls the submitted grammar validator to ensure the input respects the project grammar. That validator owns the official recursive-descent parser from Deliverable~II. After it signals success, the calculator performs a second pass with a slimmer \texttt{CalculatorParser} that is easier to mutate for note computation. This two-pass approach avoids modifying the graded parser yet still gives us a structured AST we control. The AST mirrors the grammar (Song~$\rightarrow$~Bars~$\rightarrow$~Chords) and stores the root pitch class, quality token, extension number and caret flag, alterations, omissions, and inversion bass. Bars tagged with \% are marked as repeats so they can be skipped when computing totals.
+
+\subsection{Chord Evaluation Details}
+Pitch-class computation follows the project tables. Root letters map to pitch classes (C=0, D=2, E=4, F=5, G=7, A=9, B=11); accidentals shift by $\pm1$ semitone. The evaluator:
+\begin{enumerate}
+    \item Adds quality intervals from Table~I or suspension tones from Table~II.
+    \item Drops thirds and/or fifths when \texttt{no3}, \texttt{no5}, or \texttt{no35} appears.
+    \item Applies extensions from Table~III, raising the seventh on carets and omitting it when the number is parenthesized.
+    \item Applies additions and altered fifths; an altered fifth replaces the perfect-fifth family so the set stays consistent.
+    \item Adds the inversion bass when a slash chord is present.
+\end{enumerate}
+All arithmetic is modulo~12 so enharmonic spellings collapse to the same pitch class, matching the project description~\cite{project}.
+
+\subsection{Output and Tooling}
+The \texttt{format\_table} routine renders the Fig.~3 grid, puts a star in each pitch-class column, and accumulates totals only for non-repeated bars. Rows are numbered with room for two digits, and the result is printed and saved to \texttt{calculator/out/<song\_basename>\_notes.txt}. A single call to \texttt{python calculator/calculator.py <song-file>} validates, evaluates, and writes the output; \texttt{pypdf} is only used to read the assignment text.
+
+\section{Results}
+The calculator was run on six songs from the provided corpus: ``Tick Tock,'' ``Don't Stop Believin','' ``Edge of Desire,'' ``La Camisa Negra,'' ``Luka,'' and ``Sweet Child O' Mine.'' Each run produced the star grid and totals row; repeated bars were omitted from aggregation, and inversion basses were included in the pitch-class sets. The appendix embeds the exact outputs from \texttt{calculator/out}. Comparing the totals to the instructor reference files shows matching pitch-class distributions even when layout differs, which should keep the chi-square score near the maximum.
+
+\section{Conclusion}
+The calculator validates songs, computes pitch classes per Tables~I--III (including suspensions, caret sevenths, altered additions, omissions, inversions, and repeats), and produces the required histogram and output files. The outputs in the appendix demonstrate how the implementation handles diverse charts while honoring the grammar and interval rules. Potential follow-ups include clearer error messages for malformed chords and a batch script to compare against reference outputs.
+
+\begin{thebibliography}{1}
+\bibitem{project} A.~Camacho, ``Extra credit project,'' CS3361 Concepts of Programming Languages, project handout, 2024.
+\end{thebibliography}
+
+\appendices
+\onecolumn
+\section{Calculator Outputs}
+\subsection{Tick Tock (Joji)}
+\begin{verbatim}
+       0   1   2   3   4   5   6   7   8   9   A   B
+       -   -   -   -   -   -   -   -   -   -   -   -
+  1.   *               *   *       *                  C/F
+  2.           *       *           *               *  E-7
+  3.   *       *       *           *       *          C6(9)
+  4.           *           *               *          D-
+  5.           *       *           *               *  E-7
+  6.   *               *   *       *                  C/F
+  7.           *       *                           *  E7no3
+  8.   *       *       *           *       *          C6(9)
+  9.   *       *       *   *               *          D-9
+ 10.           *       *                           *  E7no3
+ 11.           *       *                           *  E7no3
+ 12.           *       *                           *  E7no3
+ 13.   *       *       *           *       *          C6(9)
+ 14.   *       *       *           *               *  C^7/D
+ 15.   *               *           *               *  C^7/E
+ 16.   *               *   *       *                  C/F
+ 17.           *       *                           *  E7no3
+ 18.   *       *       *           *       *          C6(9)
+ 19.   *       *       *           *               *  C^7/D
+ 20.   *               *           *               *  C^7/E
+ 21.   *               *   *       *                  C/F
+ 22.           *       *           *               *  E-7
+ 23.   *       *       *           *       *          C6(9)
+ 24.   *       *       *           *                  C/D
+ 25.           *       *           *               *  E-7
+ 26.   *               *   *       *       *          F^9
+ 27.           *       *           *               *  E-7
+ 28.   *       *       *           *       *          C6(9)
+ 29.   *       *       *           *                  C/D
+ 30.           *       *           *               *  E-7
+ 31.           *       *           *               *  E-7
+ 32.           *       *                           *  E7no3
+ 33.   *       *       *           *       *          C6(9)
+ 34.   *       *       *           *               *  C^7/D
+ 35.                   *                           *  E5
+ 36.   *               *   *       *                  C/F
+ 37.           *       *                           *  E7no3
+ 38.   *       *       *           *       *          C6(9)
+ 39.   *       *       *           *                  C/D
+ 40.   *       *       *           *               *  C^9/E
+ 41.   *               *   *       *                  C/F
+ 42.           *       *           *               *  E-7
+ 43.   *       *       *           *       *          C6(9)
+ 44.   *       *       *           *               *  C^7/D
+ 45.                   *           *               *  E-
+ 46.   *               *   *       *                  C/F
+ 47.           *       *                           *  E7no3
+ 48.   *       *       *           *       *          C6(9)
+ 49.   *       *       *           *               *  C^7/D
+ 50.                   *           *               *  E-
+       -   -   -   -   -   -   -   -   -   -   -   -
+      30   0  37   0  49  10   0  39   0  13   0  27
+\end{verbatim}
+
+\subsection{Don't Stop Believin' (Journey)}
+\begin{verbatim}
+       0   1   2   3   4   5   6   7   8   9   A   B
+       -   -   -   -   -   -   -   -   -   -   -   -
+  1.                   *                           *  E5
+  2.               *           *                   *  B
+  3.       *           *               *           *  C#-7
+  4.       *           *                   *          A
+  5.                   *               *           *  E
+  6.               *           *                   *  B
+  7.               *                   *           *  G#-
+  8.       *           *                   *          A
+  9.                   *               *           *  E
+ 10.                           *                   *  B5
+ 11.       *           *               *           *  C#-7
+ 12.       *           *                   *       *  A(9)
+ 13.                   *               *           *  E
+ 14.                           *                   *  B5
+ 15.               *           *       *           *  G#-7
+ 16.       *           *                   *          A
+ 17.                   *               *           *  E
+ 18.                           *                   *  B5
+ 19.       *           *               *           *  C#-7
+ 20.       *           *                   *       *  A(9)
+ 21.                   *               *           *  E
+ 22.               *           *                   *  B
+ 23.               *           *       *           *  G#-7
+ 24.       *           *                   *          A
+ 25.                   *               *           *  E
+ 26.               *           *                   *  B
+ 27.       *           *               *           *  C#-7
+ 28.       *           *                   *          A
+ 29.                   *               *           *  E
+ 30.               *           *                   *  B
+ 31.               *                   *           *  G#-
+ 32.       *           *                   *          A
+ 33.                   *               *           *  E
+ 34.                           *                   *  B5
+ 35.       *           *               *           *  C#-7
+ 36.       *           *                   *       *  A(9)
+ 37.                   *               *           *  E
+ 38.                           *                   *  B5
+ 39.               *           *       *           *  G#-7
+ 40.       *           *       *           *          A6
+ 41.               *           *           *       *  B/A
+ 42.       *           *                   *          A
+ 43.               *           *           *       *  B/A
+ 44.                   *               *   *       *  E/A
+ 45.               *   *       *                   *  B/E
+ 46.                   *               *           *  E
+ 47.               *   *       *                   *  B/E
+ 48.                   *               *           *  E
+ 49.               *           *           *       *  B/A
+ 50.       *           *                   *          A
+ 51.               *           *           *       *  B/A
+ 52.                   *               *   *       *  E/A
+ 53.               *   *       *                   *  B/E
+ 54.                   *               *           *  E
+ 55.               *   *       *                   *  B/E
+ 56.                   *               *           *  E
+ 57.               *           *           *       *  B/A
+ 58.       *           *                   *          A
+ 59.               *           *           *       *  B/A
+ 60.                   *               *   *       *  E/A
+ 61.               *   *       *                   *  B/E
+ 62.                   *               *           *  E
+ 63.               *   *       *                   *  B/E
+ 64.                   *               *           *  E
+ 65.               *           *           *       *  B/A
+ 66.       *           *                   *          A
+ 67.               *           *           *       *  B/A
+ 68.                   *               *   *       *  E/A
+ 69.               *           *                   *  B
+ 70.                   *       *                   *  Esus2
+ 71.               *           *                   *  B
+ 72.                   *       *                   *  Esus2
+ 73.       *           *                   *       *  A(9)
+ 74.                   *               *           *  E
+ 75.               *           *                   *  B
+ 76.       *                           *           *  C#7no3
+ 77.       *           *                   *       *  A(9)
+ 78.                   *               *           *  E
+ 79.               *           *                   *  B
+ 80.       *           *               *           *  C#-7
+ 81.       *           *                   *       *  A(9)
+ 82.                   *               *           *  E
+ 83.               *           *                   *  B
+ 84.               *           *       *           *  G#-7
+ 85.       *           *                   *       *  A(9)
+ 86.                   *               *           *  E
+ 87.               *           *                   *  B
+ 88.       *           *               *           *  C#-7
+ 89.       *           *                   *       *  A(9)
+ 90.                   *               *           *  E
+ 91.               *           *                   *  B
+ 92.               *           *       *           *  G#-7
+ 93.       *           *       *           *          A6
+ 94.               *           *           *       *  B/A
+ 95.       *           *                   *          A
+ 96.               *           *           *       *  B/A
+ 97.                   *               *   *       *  E/A
+ 98.               *   *       *                   *  B/E
+ 99.                   *               *           *  E
+100.               *   *       *                   *  B/E
+101.                   *               *           *  E
+102.               *           *           *       *  B/A
+103.       *           *                   *          A
+104.               *           *           *       *  B/A
+105.                   *               *   *       *  E/A
+106.               *   *       *                   *  B/E
+107.                   *               *           *  E
+108.               *   *       *                   *  B/E
+109.                   *                           *  E5
+110.               *           *           *       *  B/A
+111.                   *                   *          A5
+112.               *           *           *       *  B/A
+113.                   *               *   *       *  E/A
+114.               *   *       *                   *  B/E
+115.                   *               *           *  E
+116.               *   *       *                   *  B/E
+117.                   *               *           *  E
+118.               *           *           *       *  B/A
+119.       *           *                   *          A
+120.               *           *           *       *  B/A
+121.                   *               *   *       *  E/A
+122.               *           *                   *  B
+123.                   *       *                   *  Esus2
+124.               *           *                   *  B
+125.                   *       *                   *  Esus2
+126.       *           *       *           *       *  A6(9)
+127.                   *               *           *  E
+128.               *           *       *           *  B6
+129.       *           *               *              C#-
+130.       *           *                   *          A
+131.                   *               *           *  E
+132.                           *                   *  B5
+133.               *                   *           *  G#-
+134.                   *                   *          A5
+135.                   *               *           *  E
+136.               *           *                   *  B
+137.       *                           *              C#5
+138.       *           *                   *          A
+139.                   *               *           *  E
+140.                           *                   *  B5
+141.               *                   *           *  G#-
+142.                   *                   *       *  Asus2
+143.                   *               *           *  E
+144.                           *                   *  B5
+145.       *                           *              C#5
+146.                   *                   *       *  Asus2
+147.                   *               *           *  E
+148.                           *                   *  B5
+149.               *                   *           *  G#-
+150.                   *                   *       *  Asus2
+151.                   *               *           *  E
+152.                           *                   *  B5
+153.       *                           *           *  C#7no3
+154.       *           *                   *          A
+155.                   *               *           *  E
+156.                           *                   *  B5
+157.               *                   *           *  G#-
+158.                                       *          A1
+       -   -   -   -   -   -   -   -   -   -   -   -
+       0  39   0  55  99   0  67   0  65  57   0 134
+\end{verbatim}
+
+\subsection{Edge of Desire (Jonas Blue \& Malive)}
+\begin{verbatim}
+       0   1   2   3   4   5   6   7   8   9   A   B
+       -   -   -   -   -   -   -   -   -   -   -   -
+  1.   *               *                   *          A-
+  2.   *       *           *               *          D-7
+  3.           *                   *               *  G
+  4.   *               *           *       *          A-7
+  5.   *       *           *               *          D-7
+  6.           *           *       *               *  G7
+  7.                   *                   *          A5
+  8.           *                                      D1
+  9.           *                   *                  G5
+ 10.                   *                   *          A5
+ 11.           *                                      D1
+ 12.           *                   *               *  G
+ 13.   *               *           *       *          A-7
+ 14.   *       *           *               *          D-7
+ 15.           *                   *               *  G
+ 16.   *               *           *       *          A-7
+ 17.   *       *           *               *          D-7
+ 18.           *                   *               *  G
+ 19.   *               *           *       *          A-7
+ 20.   *       *           *               *          D-7
+ 21.           *                   *               *  G
+ 22.   *               *           *       *          A-7
+ 23.   *       *           *               *          D-7
+ 24.           *                   *               *  G
+ 25.   *               *           *       *          A-7
+ 26.   *       *           *               *          D-7
+ 27.           *                   *               *  G
+ 28.   *               *           *       *          A-7
+ 29.   *       *           *               *          D-7
+ 30.           *                   *               *  G
+ 31.   *               *           *       *          A-7
+ 32.   *       *           *               *          D-7
+ 33.           *                   *               *  G
+ 34.   *               *           *       *          A-7
+ 35.   *       *           *               *          D-7
+ 36.           *                   *               *  G
+ 37.   *               *           *       *          A-7
+ 38.   *       *           *               *          D-7
+ 39.           *                   *               *  G
+ 40.   *               *                   *          A-
+ 41.   *       *           *               *          D-7
+ 42.           *                   *               *  G
+ 43.   *               *           *       *          A-7
+ 44.   *       *           *               *          D-7
+ 45.           *                   *               *  G
+ 46.                   *                   *          A5
+ 47.           *           *               *          D-
+ 48.           *                   *               *  G
+ 49.   *               *           *       *          A-7
+ 50.           *           *               *          D-
+ 51.           *                   *               *  G
+ 52.   *               *                   *          A-
+ 53.   *       *           *               *          D-7
+ 54.           *                   *               *  G
+ 55.   *               *                   *          A-
+ 56.   *       *           *               *          D-7
+ 57.           *                   *               *  G
+ 58.   *               *           *       *          A-7
+ 59.   *                   *               *          F
+ 60.           *                   *               *  G
+ 61.   *               *           *       *          A-7
+ 62.   *                   *               *          F
+ 63.           *                   *               *  G
+ 64.   *               *           *       *          A-7
+ 65.   *                   *               *          F
+ 66.           *                   *               *  G
+ 67.   *               *           *       *          A-7
+ 68.   *                   *               *          F
+ 69.           *                   *               *  G
+ 70.   *               *                   *          A-
+ 71.   *                   *               *          F
+ 72.           *           *       *               *  G7
+ 73.   *               *           *       *          A-7
+ 74.   *       *           *               *          D-7
+ 75.           *                   *               *  G
+ 76.   *               *           *       *          A-7
+ 77.   *                   *               *          F
+ 78.           *           *       *               *  G7
+ 79.   *               *           *       *          A-7
+ 80.   *                   *               *          F
+ 81.           *                   *               *  G
+ 82.   *               *           *       *          A-7
+ 83.   *                   *               *          F
+ 84.           *                   *               *  G
+ 85.   *               *           *       *          A-7
+ 86.   *                   *               *          F
+ 87.           *                   *               *  G
+ 88.   *               *           *       *          A-7
+ 89.   *                   *               *          F
+ 90.           *                   *               *  G
+ 91.   *               *           *       *          A-7
+ 92.   *                   *               *          F
+ 93.           *                   *               *  G
+ 94.   *               *           *       *          A-7
+ 95.   *       *           *               *          D-7
+ 96.           *                   *               *  G
+ 97.   *               *                   *          A-
+ 98.   *       *           *               *          D-7
+ 99.           *                   *               *  G
+100.   *               *           *       *          A-7
+101.   *       *           *               *          D-7
+102.           *                   *               *  G
+103.   *               *           *       *          A-7
+104.   *       *           *               *          D-7
+105.           *                   *               *  G
+106.   *               *           *       *          A-7
+107.   *       *           *               *          D-7
+108.           *                   *               *  G
+109.   *               *           *       *          A-7
+110.   *       *           *               *          D-7
+111.           *                   *               *  G
+112.   *               *                   *          A-
+113.           *           *               *          D-
+114.           *                   *               *  G
+115.   *               *           *       *          A-7
+116.   *       *           *               *          D-7
+117.           *                   *               *  G
+118.   *               *           *       *          A-7
+119.           *           *               *          D-
+120.           *                   *               *  G
+121.   *               *           *       *          A-7
+122.   *       *           *               *          D-7
+123.           *                   *               *  G
+124.   *               *           *       *          A-7
+125.           *           *               *          D-
+126.           *                   *               *  G
+127.   *               *                   *          A-
+128.           *           *               *          D-
+129.           *                   *               *  G
+130.   *               *           *       *          A-7
+131.   *       *           *               *          D-7
+132.           *                   *               *  G
+133.   *               *           *       *          A-7
+134.   *       *           *               *          D-7
+135.           *                   *               *  G
+136.   *               *           *       *          A-7
+137.   *       *           *               *          D-7
+138.           *                   *               *  G
+139.   *               *           *       *          A-7
+140.   *       *           *               *          D-7
+141.           *                   *               *  G
+       -   -   -   -   -   -   -   -   -   -   -   -
+      83   0  83   0  47  48   0  83   0  92   0  46
+\end{verbatim}
+
+\subsection{La Camisa Negra (Juanes)}
+\begin{verbatim}
+       0   1   2   3   4   5   6   7   8   9   A   B
+       -   -   -   -   -   -   -   -   -   -   -   -
+  1.       *                   *           *          F#-
+  2.       *               *           *           *  C#7
+  3.       *                   *           *          F#-
+  4.           *               *                   *  B-
+  5.       *               *           *           *  C#7
+  6.       *                   *           *          F#-
+  7.       *               *           *           *  C#7
+  8.       *                   *           *          F#-
+  9.           *               *                   *  B-
+ 10.       *               *           *           *  C#7
+ 11.       *                   *           *          F#-
+ 12.       *                   *           *          F#-
+ 13.       *               *           *           *  C#7
+ 14.       *                   *           *          F#-
+ 15.           *               *                   *  B-
+ 16.       *               *           *              C#
+ 17.       *                   *           *          F#-
+ 18.       *               *           *           *  C#7
+ 19.       *                   *           *          F#-
+ 20.           *               *                   *  B-
+ 21.       *               *           *           *  C#7
+ 22.       *                   *           *          F#-
+ 23.       *               *           *           *  C#7
+ 24.       *                   *           *          F#-
+ 25.           *               *                   *  B-
+ 26.       *               *           *           *  C#7
+ 27.       *                   *               *      F#
+ 28.               *                   *           *  G#-
+ 29.       *               *                   *      A#-
+ 30.               *           *                   *  B
+ 31.       *                   *               *      F#
+ 32.               *                   *           *  G#-
+ 33.       *               *                   *      A#-
+ 34.               *           *                   *  B
+ 35.       *                   *               *      F#
+ 36.               *                   *           *  G#-
+ 37.       *               *                   *      A#-
+ 38.               *           *                   *  B
+ 39.       *                   *               *      F#
+ 40.               *                   *           *  G#-
+ 41.       *               *                   *      A#-
+ 42.               *           *                   *  B
+ 43.       *                   *           *          F#-
+ 44.       *               *           *           *  C#7
+ 45.       *                   *           *          F#-
+ 46.           *               *                   *  B-
+ 47.       *               *           *           *  C#7
+ 48.       *                   *           *          F#-
+ 49.       *               *           *           *  C#7
+ 50.       *                   *           *          F#-
+ 51.           *               *                   *  B-
+ 52.       *               *           *           *  C#7
+ 53.       *                   *           *          F#-
+ 54.       *               *           *           *  C#7
+ 55.       *                   *           *          F#-
+ 56.           *               *                   *  B-
+ 57.       *               *           *           *  C#7
+ 58.       *                   *           *          F#-
+ 59.       *               *           *           *  C#7
+ 60.       *                   *           *          F#-
+ 61.           *               *                   *  B-
+ 62.       *               *           *           *  C#7
+ 63.       *                   *           *          F#-
+ 64.       *                   *           *          F#-
+ 65.       *               *           *           *  C#7
+ 66.       *                   *           *          F#-
+ 67.           *               *                   *  B-
+ 68.       *               *           *           *  C#7
+ 69.       *                   *           *          F#-
+ 70.       *               *           *           *  C#7
+ 71.       *                   *           *          F#-
+ 72.           *               *                   *  B-
+ 73.       *               *           *              C#
+ 74.       *                   *           *          F#-
+ 75.       *               *           *           *  C#7
+ 76.       *                   *           *          F#-
+ 77.           *               *                   *  B-
+ 78.       *               *           *           *  C#7
+ 79.       *                   *               *      F#
+ 80.               *                   *           *  G#-
+ 81.       *               *                   *      A#-
+ 82.               *           *                   *  B
+ 83.       *                   *               *      F#
+ 84.               *                   *           *  G#-
+ 85.       *               *                   *      A#-
+ 86.               *           *                   *  B
+ 87.       *                   *               *      F#
+ 88.               *                   *           *  G#-
+ 89.       *               *                   *      A#-
+ 90.               *           *                   *  B
+ 91.       *                   *               *      F#
+ 92.               *                   *           *  G#-
+ 93.       *               *                   *      A#-
+ 94.               *           *                   *  B
+ 95.       *                   *           *          F#-
+ 96.       *               *           *           *  C#7
+ 97.       *                   *           *          F#-
+ 98.           *               *                   *  B-
+ 99.       *               *           *           *  C#7
+100.       *                   *           *          F#-
+101.       *               *           *           *  C#7
+102.       *                   *           *          F#-
+103.           *               *                   *  B-
+104.       *               *           *           *  C#7
+105.       *                   *           *          F#-
+106.       *               *           *           *  C#7
+107.       *                   *           *          F#-
+108.           *               *                   *  B-
+109.       *               *           *              C#
+110.       *                   *           *          F#-
+111.       *               *           *           *  C#7
+112.       *                   *           *          F#-
+113.           *               *                   *  B-
+114.       *               *           *           *  C#7
+115.       *                   *           *          F#-
+       -   -   -   -   -   -   -   -   -   -   -   -
+       0  83  16  16   0  40  67   0  40  35  16  61
+\end{verbatim}
+
+\subsection{Luka (Violent Vira)}
+\begin{verbatim}
+       0   1   2   3   4   5   6   7   8   9   A   B
+       -   -   -   -   -   -   -   -   -   -   -   -
+  1.           *                   *       *          Gsus2
+  2.       *                   *                   *  Bsus2
+  3.           *                   *       *          Gsus2
+  4.       *                   *                   *  Bsus2
+  5.           *                   *       *          Gsus2
+  6.       *                   *                   *  Bsus2
+  7.           *                   *       *          Gsus2
+  8.       *                   *                   *  Bsus2
+  9.                   *       *   *               *  E-(9)
+ 10.           *               *   *               *  G^7
+ 11.       *   *               *                   *  B-(9)
+ 12.           *               *   *               *  G^7
+ 13.                   *           *               *  E-
+ 14.           *               *   *               *  G^7
+ 15.           *               *                   *  B-
+ 16.       *           *       *   *       *          A13
+ 17.           *               *   *               *  G^7
+ 18.       *                   *                   *  Bsus2
+ 19.           *                   *       *          Gsus2
+ 20.       *                   *                   *  Bsus2
+ 21.           *                   *       *          Gsus2
+ 22.       *                   *                   *  Bsus2
+ 23.           *                   *                  G5
+ 24.       *   *               *                   *  B-(9)
+ 25.           *                   *                  G5
+ 26.                           *                   *  B5
+ 27.           *                   *                  G5
+ 28.                           *                   *  B5
+ 29.                   *       *                   *  Esus2
+ 30.       *   *               *                   *  B-(9)
+ 31.           *       *       *   *               *  E-9
+ 32.                           *                   *  B5
+ 33.           *                   *               *  G
+ 34.                   *       *   *               *  E-(9)
+ 35.           *               *   *               *  G^7
+ 36.       *   *               *                   *  B-(9)
+ 37.       *   *               *   *       *       *  G^9#11
+ 38.                   *       *   *               *  E-(9)
+ 39.           *               *   *               *  G^7
+ 40.           *               *                   *  B-
+ 41.       *           *       *   *       *          A13
+ 42.           *               *   *               *  G^7
+ 43.       *                   *                   *  Bsus2
+ 44.           *                   *       *          Gsus2
+ 45.       *                   *                   *  Bsus2
+ 46.       *   *                   *               *  G(#11)
+ 47.       *                   *                   *  Bsus2
+ 48.           *                   *                  G5
+ 49.       *                   *                   *  Bsus2
+ 50.           *               *   *               *  G^7
+ 51.       *                   *                   *  Bsus2
+ 52.           *                   *       *          Gsus2
+ 53.                           *                   *  B5
+ 54.                   *       *                   *  Esus2
+ 55.                           *                   *  B5
+ 56.                   *       *                   *  Esus2
+ 57.                           *                   *  B5
+ 58.       *   *               *   *               *  G^7#11
+ 59.       *                   *                   *  Bsus2
+ 60.           *                   *       *          Gsus2
+ 61.       *                   *                   *  Bsus2
+ 62.           *                   *       *          Gsus2
+ 63.       *                   *                   *  Bsus2
+ 64.           *                   *       *          Gsus2
+       -   -   -   -   -   -   -   -   -   -   -   -
+       0  24  34   0  10   0  46  34   0  14   0  47
+\end{verbatim}
+
+\subsection{Sweet Child O' Mine (Guns N' Roses)}
+\begin{verbatim}
+       0   1   2   3   4   5   6   7   8   9   A   B
+       -   -   -   -   -   -   -   -   -   -   -   -
+  1.           *                   *       *          Dsus4
+  2.           *       *           *       *          A7sus4 / E
+  3.           *                   *       *          Gsus2
+  4.           *                   *       *          Dsus4
+  5.           *               *           *          D
+  6.   *               *           *                  C
+  7.           *                   *       *          Gsus2
+  8.           *               *           *          D
+  9.           *               *           *          D
+ 10.   *               *           *                  C
+ 11.           *                   *               *  G
+ 12.           *               *           *          D
+ 13.           *               *           *          D
+ 14.   *               *           *                  C
+ 15.           *                   *               *  G
+ 16.           *               *           *          D
+ 17.           *               *           *          D
+ 18.   *               *           *                  C
+ 19.           *                   *               *  G
+ 20.           *               *           *          D
+ 21.       *           *                   *          A
+ 22.   *               *           *                  C
+ 23.           *               *           *          D
+ 24.       *           *                   *          A
+ 25.   *               *           *                  C
+ 26.           *                           *          D5
+ 27.           *               *           *          D
+ 28.   *               *           *                  C
+ 29.           *                   *               *  G
+ 30.           *               *           *          D
+ 31.           *               *           *          D
+ 32.   *               *           *                  C
+ 33.           *                   *               *  G
+ 34.           *               *           *          D
+ 35.           *               *           *          D
+ 36.   *               *           *                  C
+ 37.           *                   *               *  G
+ 38.           *               *           *          D
+ 39.       *           *                   *          A
+ 40.   *               *           *                  C
+ 41.           *                           *          D5
+ 42.       *           *                   *          A
+ 43.   *               *           *                  C
+ 44.           *                   *       *          Gsus2
+ 45.           *               *           *          D
+ 46.   *               *           *                  C
+ 47.           *                   *                  G5
+ 48.           *               *           *          D
+ 49.           *               *           *          D
+ 50.   *               *           *                  C
+ 51.           *                   *               *  G
+ 52.           *               *           *          D
+ 53.       *           *                   *          A
+ 54.   *               *           *                  C
+ 55.           *               *           *          D
+ 56.       *           *                   *          A
+ 57.   *               *           *                  C
+ 58.           *               *           *          D
+ 59.       *           *                   *          A
+ 60.   *               *           *                  C
+ 61.           *               *           *          D
+ 62.       *           *                   *          A
+ 63.   *               *           *                  C
+ 64.           *               *           *          D
+ 65.                   *                           *  E5
+ 66.   *               *           *                  C
+ 67.               *           *                   *  B
+ 68.                   *                   *          A5
+ 69.                   *           *               *  E-
+ 70.   *                           *                  C5
+ 71.               *           *                   *  B
+ 72.                   *                   *          A5
+ 73.                   *           *               *  E-
+ 74.   *               *           *                  C
+ 75.               *           *                   *  B
+ 76.   *               *                   *          A-
+ 77.                   *                           *  E5
+ 78.   *               *           *                  C
+ 79.               *           *                   *  B
+ 80.                   *                   *          A5
+ 81.                   *                              E1
+ 82.           *                   *               *  G
+ 83.                   *                   *          A5
+ 84.   *               *           *                  C
+ 85.           *               *           *          D
+ 86.                   *                              E1
+ 87.           *                   *               *  G
+ 88.                   *                   *          A5
+ 89.   *               *           *                  C
+ 90.           *               *           *          D
+ 91.                   *           *               *  E-
+ 92.           *                   *               *  G
+ 93.                   *                   *          A5
+ 94.   *               *           *                  C
+ 95.           *               *           *          D
+ 96.                   *                           *  E5
+ 97.           *                   *               *  G
+ 98.       *           *                   *          A
+ 99.   *               *           *                  C
+100.           *               *           *          D
+101.                   *           *               *  E-
+102.           *                   *               *  G
+103.       *           *                   *          A
+104.   *               *           *                  C
+105.           *               *           *          D
+106.                   *           *               *  E-
+107.           *                   *               *  G
+108.       *           *                   *          A
+109.   *               *           *                  C
+110.           *               *           *          D
+111.                   *           *               *  E-
+112.           *                   *               *  G
+113.       *           *                   *          A
+114.   *               *           *                  C
+115.           *               *           *          D
+116.                   *           *               *  E-
+117.           *                   *               *  G
+118.       *           *                   *          A
+119.   *               *           *                  C
+120.           *               *           *          D
+121.                   *           *               *  E-
+122.           *                   *               *  G
+123.       *           *                   *          A
+124.   *               *           *                  C
+125.           *               *           *          D
+126.                   *           *               *  E-
+127.           *                   *               *  G
+128.       *           *                   *          A
+129.   *               *           *                  C
+130.           *               *           *          D
+131.                   *           *               *  E-
+132.           *                   *               *  G
+133.       *           *                   *          A
+134.                   *           *               *  E-
+135.           *                   *               *  G
+136.                   *                   *          A5
+137.   *               *           *                  C
+138.           *               *           *          D
+139.                   *           *               *  E-
+       -   -   -   -   -   -   -   -   -   -   -   -
+      33  16  62   4  73   0  38  70   0  66   0  38
+\end{verbatim}
+
+\end{document}
